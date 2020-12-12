@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include "load_cell_msgs/LoadCellForceVector.h"
 #include "load_cell_msgs/LoadCellForceArray.h"
 #include "load_cell_msgs/LoadCellForce.h"
 #include "std_msgs/Float64.h"
@@ -6,6 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <stdlib.h>
+#include <cmath>
 
 int sensor_count = 4;
 std::vector<double> sensor_value_list(4);
@@ -47,14 +49,55 @@ double* kg2force(){
 }
 
 void printData(double* force_list){
-  for(int i=0; i<4; i++){
+  for(int i=0; i<sensor_count; i++){
     std::cout << "id : " << i << " : " << force_list[i] << std::endl;
   }
   std::cout << "----------------" << std::endl;
   return;
 }
 
-void pubProcess(double* force_list, ros::Publisher& pub){
+std::pair<double, double> calForceVector(double* force_list){
+  std::pair<double, double> force_vector = {};
+  double x_vector, y_vector;
+  double force_theta[4] = {0, 3.0/2, 1.0/2, 1}; // radian
+  x_vector = 0;
+  y_vector = 0;
+
+  for(int i=0; i<sensor_count; i++){
+    double force_val = force_list[i];
+    double theta = M_PI * force_theta[i];
+
+    x_vector += sin(theta) * force_val;
+    y_vector += cos(theta) * force_val;
+  }
+
+  force_vector.first = x_vector;
+  force_vector.second = y_vector;
+
+  return force_vector;
+}
+
+void pubForceVectorProcess(std::pair<double, double> force_vector, ros::Publisher& pub){
+  load_cell_msgs::LoadCellForceVector pub_msgs;
+  double raw_x, raw_y, x, y, force;
+
+  raw_x = force_vector.first;
+  raw_y = force_vector.second;
+
+  force = std::sqrt(std::pow(raw_x, 2) + std::pow(raw_y, 2));
+  x 	= raw_x / force;
+  y		= raw_y / force;
+
+  pub_msgs.x = x;
+  pub_msgs.y = y;
+  pub_msgs.force = force;
+
+  pub.publish(pub_msgs);
+
+  return;
+}
+
+void pubForceListProcess(double* force_list, ros::Publisher& pub){
   load_cell_msgs::LoadCellForceArray pub_msgs;
   std::vector<load_cell_msgs::LoadCellForce> force_datas = {};
   for(int i=0; i<4; i++){
@@ -83,18 +126,21 @@ int main(int argc, char **argv){
   ros::Subscriber sub3 = nh.subscribe("area3_value", 1, area3LoadCellCallback);
   ros::Subscriber sub4 = nh.subscribe("area4_value", 1, area4LoadCellCallback);
 
-  ros::Publisher pub = nh.advertise<load_cell_msgs::LoadCellForceArray>("/load_cell/force_value", 10);
+  ros::Publisher arrayPub = nh.advertise<load_cell_msgs::LoadCellForceArray>("/load_cell/force_array", 10);
+  ros::Publisher vectorPub = nh.advertise<load_cell_msgs::LoadCellForceVector>("/load_cell/force_vector", 10);
   ros::Rate loop_rate(100);
 
-  double* force_list;
-  force_list = (double *)malloc(4*sizeof(double));
+  double* force_list = (double *)malloc(4*sizeof(double));
+  std::pair<double, double> force_vector = {};
 
   while(ros::ok()){
     force_list = kg2force();
 
     printData(force_list);
-
-    pubProcess(force_list, pub);
+	
+	force_vector = calForceVector(force_list);
+    pubForceListProcess(force_list, arrayPub);
+	pubForceVectorProcess(force_vector, vectorPub);
 
     loop_rate.sleep();
     ros::spinOnce();
