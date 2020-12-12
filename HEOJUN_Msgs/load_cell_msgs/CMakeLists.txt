@@ -10,6 +10,7 @@ add_message_files(
   FILES
   LoadCellForce.msg
   LoadCellForceArray.msg
+  LoadCellForceVector.msg
 )
 
 generate_messages(
