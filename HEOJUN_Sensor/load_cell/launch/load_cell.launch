@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<launch>
+  <param name="kg2force_ratio" value="1.5"/>
+
+  <node name="serial_node" pkg="rosserial_python" type="serial_node.py"/>
+  <node name="load_cell_node" pkg="load_cell" type="load_cell_node"/>
+
+</launch>

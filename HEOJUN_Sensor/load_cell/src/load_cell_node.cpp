@@ -10,6 +10,7 @@
 #include <cmath>
 
 int sensor_count = 4;
+float kg2force_ratio;
 std::vector<double> sensor_value_list(4);
 
 void area1LoadCellCallback(const std_msgs::Float64::ConstPtr& msg){
@@ -34,7 +35,7 @@ void area4LoadCellCallback(const std_msgs::Float64::ConstPtr& msg){
 
 double kg2forceFomular(double kg){
   double force = 0;
-  force = kg / 10;
+  force = kg / kg2force_ratio;
 
   return force;
 }
@@ -59,7 +60,7 @@ void printData(double* force_list){
 std::pair<double, double> calForceVector(double* force_list){
   std::pair<double, double> force_vector = {};
   double x_vector, y_vector;
-  double force_theta[4] = {0, 3.0/2, 1.0/2, 1}; // radian
+  double force_theta[4] = {0, 1.0/2, 3.0/2, 1}; // radian
   x_vector = 0;
   y_vector = 0;
 
@@ -67,8 +68,8 @@ std::pair<double, double> calForceVector(double* force_list){
     double force_val = force_list[i];
     double theta = M_PI * force_theta[i];
 
-    x_vector += sin(theta) * force_val;
-    y_vector += cos(theta) * force_val;
+    x_vector += cos(theta) * force_val;
+    y_vector += sin(theta) * force_val;
   }
 
   force_vector.first = x_vector;
@@ -85,8 +86,8 @@ void pubForceVectorProcess(std::pair<double, double> force_vector, ros::Publishe
   raw_y = force_vector.second;
 
   force = std::sqrt(std::pow(raw_x, 2) + std::pow(raw_y, 2));
-  x 	= raw_x / force;
-  y		= raw_y / force;
+  x = raw_x / force;
+  y	= raw_y / force;
 
   pub_msgs.x = x;
   pub_msgs.y = y;
@@ -127,20 +128,23 @@ int main(int argc, char **argv){
   ros::Subscriber sub4 = nh.subscribe("area4_value", 1, area4LoadCellCallback);
 
   ros::Publisher arrayPub = nh.advertise<load_cell_msgs::LoadCellForceArray>("/load_cell/force_array", 10);
-  ros::Publisher vectorPub = nh.advertise<load_cell_msgs::LoadCellForceVector>("/load_cell/force_vector", 10);
+  // ros::Publisher vectorPub = nh.advertise<load_cell_msgs::LoadCellForceVector>("/load_cell/force_vector", 10);
+  ros::Publisher vectorPub = nh.advertise<load_cell_msgs::LoadCellForceVector>("/control/external_force", 10);
   ros::Rate loop_rate(100);
 
   double* force_list = (double *)malloc(4*sizeof(double));
   std::pair<double, double> force_vector = {};
+
+  kg2force_ratio = nh.param<float>("kg2force_ratio", 10.0);
 
   while(ros::ok()){
     force_list = kg2force();
 
     printData(force_list);
 	
-	force_vector = calForceVector(force_list);
+	  force_vector = calForceVector(force_list);
     pubForceListProcess(force_list, arrayPub);
-	pubForceVectorProcess(force_vector, vectorPub);
+	  pubForceVectorProcess(force_vector, vectorPub);
 
     loop_rate.sleep();
     ros::spinOnce();
