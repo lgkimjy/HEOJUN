@@ -11,7 +11,7 @@ class DcMotorForRaspberryPi
 {
   public:
     DcMotorForRaspberryPi();
-    DcMotorForRaspberryPi(int encoder_pulse_per_rotation, float wheel_radius, float K_P);
+    DcMotorForRaspberryPi(int encoder_pulse_per_rotation, float wheel_radius, float K_P, float K_D);
     ~DcMotorForRaspberryPi();
 
     double pwm_value_motor;
@@ -32,9 +32,11 @@ class DcMotorForRaspberryPi
     ros::Time current_time, last_time;
     float dt;
     float vel;
+    float acc;
 
     //variables for PD control
     float K_P;
+    float K_D;
 
     float ref_speed;
     float err_speed;
@@ -49,4 +51,5 @@ class DcMotorForRaspberryPi
     int encoder_pulse_per_rotation_;
     float wheel_radius_;
     float K_P_;
+    float K_D_;
 };

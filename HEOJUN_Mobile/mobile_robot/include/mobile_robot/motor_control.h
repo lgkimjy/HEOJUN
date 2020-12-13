@@ -55,7 +55,12 @@ ros::Subscriber motor_second_command_sub;
 DcMotorForRaspberryPi* motor1;
 DcMotorForRaspberryPi* motor2;
 map<int, int> m;
-	
+
+float p_gain_val_m1;
+float d_gain_val_m1;
+float p_gain_val_m2;
+float d_gain_val_m2;
+
 //Joystick 
 double joy;
 

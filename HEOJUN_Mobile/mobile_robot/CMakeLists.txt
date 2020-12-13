@@ -37,6 +37,6 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} )
 
-add_executable(mobile_robot_motor src/motor.cpp src/motor_control.cpp)
-target_link_libraries(mobile_robot_motor ${catkin_LIBRARIES} wiringPi -lrt)
-add_dependencies(mobile_robot_motor mobile_robot_generate_messages_cpp)
+ add_executable(mobile_robot_motor src/motor.cpp src/motor_control.cpp)
+ target_link_libraries(mobile_robot_motor ${catkin_LIBRARIES} wiringPi -lrt)
+ add_dependencies(mobile_robot_motor mobile_robot_generate_messages_cpp)

@@ -9,8 +9,10 @@
 ///////////////////////*    initialize    *///////////////////////
 void initialize()
 {
-  motor1 = new DcMotorForRaspberryPi(EncoderCountsPerWheel, wheelradius, 5000.0);
-  motor2 = new DcMotorForRaspberryPi(EncoderCountsPerWheel, wheelradius, 5000.0);
+  motor1 = new DcMotorForRaspberryPi(EncoderCountsPerWheel, wheelradius, p_gain_val_m1, d_gain_val_m1);
+  motor2 = new DcMotorForRaspberryPi(EncoderCountsPerWheel, wheelradius, p_gain_val_m2, d_gain_val_m2);
+  // motor1 = new DcMotorForRaspberryPi(EncoderCountsPerWheel, wheelradius, 5000.0, 10.0);
+  // motor2 = new DcMotorForRaspberryPi(EncoderCountsPerWheel, wheelradius, 5000.0, 10.0);
 
   m.insert(make_pair(1, 0));	m.insert(make_pair(3, 1));
 	m.insert(make_pair(2, 2));	m.insert(make_pair(6, 3));
@@ -37,19 +39,18 @@ void motor_second_command_callback(const std_msgs::Float64::ConstPtr& msg)
 }
 
 ////////////////////////////*    Control & Funcs    *////////////////////////////
-// void go(float speed)
-// {
-//   ref_speed = speed;
-// }
-
 void ControlSpeed(int pwm_pin, int direction_pin, DcMotorForRaspberryPi* motor)
 {
   motor->err_speed  =  motor->ref_speed - motor->vel;
+  motor->err_speed_dot  =  motor->err_speed - motor->err_speed_k_1;
 
   motor->up = motor->K_P * (float)motor->err_speed;
+  motor->ud = motor->K_D * (float)motor->err_speed_dot;
 
-  motor->usum = motor->up;
+  motor->usum = motor->up + motor->ud;
 
+  motor->err_speed_k_1 = motor->err_speed;
+  
   ROS_INFO("in control : ref_spd = %f", motor->ref_speed);
   ROS_INFO("in control : motor->vel = %f", motor->vel);
   // ROS_INFO("in control : err_speed = %f", motor->err_speed);
@@ -77,9 +78,11 @@ void speedCalc(DcMotorForRaspberryPi* motor)
   motor->current_time = ros::Time::now();
   motor->dt = (motor->current_time - motor->last_time).toSec();
   motor->vel = (motor->encoder_pulse - motor->previous_pulse) * motor->DistancePerCount/motor->dt;
+  motor->acc = motor->vel / motor->dt;
 
   ROS_INFO("in speedCalc : diff_pulse = %f", (motor->encoder_pulse - motor->previous_pulse));
   // ROS_INFO("in speedCalc : vel = %f", motor->vel);
+  ROS_INFO("in speedCalc : acc = %f", motor->acc);
   motor->previous_pulse = motor->encoder_pulse;
   motor->last_time = motor->current_time;
 }
@@ -134,21 +137,26 @@ int main (int argc, char **argv)
 {
   printf("Motor node Start \n");
 
-  wiringPiSetupGpio();
-  initialize();
-
   ros::init(argc, argv, "motor_control");
   ros::NodeHandle nh;
 
-  ros::Timer timer_control = nh.createTimer(ros::Duration(0.02), controlFunction); // 20ms
+  p_gain_val_m1 = nh.param<float>("p_gain_m1", 10.0);
+  d_gain_val_m1 = nh.param<float>("d_gain_m1", 10.0);
+  p_gain_val_m2 = nh.param<float>("p_gain_m2", 10.0);
+  d_gain_val_m2 = nh.param<float>("d_gain_m2", 10.0);
+
+  wiringPiSetupGpio();
+  initialize();
+
+  ros::Timer timer_control = nh.createTimer(ros::Duration(0.025), controlFunction); // 25ms
 
   std::string motor_first_topic = nh.param<std::string>("motor_first", "");
   std::string motor_second_topic = nh.param<std::string>("motor_second", "");
-
+  
   motor_first_command_sub   = nh.subscribe(motor_first_topic, 1, motor_first_command_callback);
   motor_second_command_sub   = nh.subscribe(motor_second_topic, 1, motor_second_command_callback);
 
-  motor_joy_sub            = nh.subscribe("joy", 10, joy_callback);
+  //motor_joy_sub            = nh.subscribe("joy", 10, joy_callback);
 
   pinMode(motor1_IN1, OUTPUT);
   pinMode(motor1_BREAK, OUTPUT);

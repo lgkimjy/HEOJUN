@@ -56,10 +56,10 @@ void mecanum_kinematics(void)
   m3_v = mobile_vx + mobile_vy - (L+W) * mobile_wz;
   m4_v = mobile_vx + (-1 * mobile_vy) + (L+W) * mobile_wz;
 
-  ROS_INFO("m1_v | %.4f", m1_v);
-  ROS_INFO("m2_v | %.4f", m2_v);
-  ROS_INFO("m3_v | %.4f", m3_v);
-  ROS_INFO("m4_v | %.4f", m4_v);
+  ROS_INFO("m1_v | %3.4f", m1_v);
+  ROS_INFO("m2_v | %3.4f", m2_v);
+  ROS_INFO("m3_v | %3.4f", m3_v);
+  ROS_INFO("m4_v | %3.4f", m4_v);
 
   motor_cmd_msg_1.data = m1_v;
   motor_cmd_msg_2.data = -1 * m2_v;
@@ -82,7 +82,7 @@ int main (int argc, char **argv)
 
   // ros::Subscriber joy_sub   = nh.subscribe("/joy", 10, joy_callback);
   ros::Subscriber cmd_vel_sub   = nh.subscribe("/heojun/cmd_vel", 10, cmd_vel_Callback);
-  ros::Rate loop_rate(125); // 8ms
+  ros::Rate loop_rate(100); // 10ms
 
   while(ros::ok())
   {
