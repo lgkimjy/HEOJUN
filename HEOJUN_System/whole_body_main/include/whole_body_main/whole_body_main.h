@@ -18,10 +18,14 @@
 #include <geometry_msgs/Pose.h>
 #include <sensor_msgs/Joy.h>
 
+//custom message type
+#include <load_cell_msgs/LoadCellForceVector.h>
+
 //mobile informations
 #define mobile_mass 18.9
 
-std_msgs::Float64 mobile_cmd_msg;
+geometry_msgs::Twist mobile_cmd_msg;
+load_cell_msgs::LoadCellForceVector disturbance_vector_msg;
 
 //ros communication pubsub declare
 ros::Publisher mobile_cmd_vel_pub;
@@ -37,7 +41,8 @@ float acc_x;
 float acc_y;
 float force_x;
 float force_y;
+float e_force_x;
+float e_force_y;
 
 ros::Time current_time, last_time;
-
 float dt;

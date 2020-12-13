@@ -9,19 +9,21 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  load_cell_msgs
   message_generation
 )
 
 generate_messages(
   DEPENDENCIES
   std_msgs
+  load_cell_msgs
   geometry_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES whole_body_main
-  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs std_msgs
+  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs std_msgs load_cell_msgs
   #DEPENDS system_lib
 )
 
